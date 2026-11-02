@@ -1,1 +1,23 @@
-
+name: Update offsets
+on: workflow_dispatch
+jobs:
+  run:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Giải nén
+        shell: pwsh
+        run: Expand-Archive tool.zip -DestinationPath . -Force
+      - name: Sửa dấu phẩy thừa trong config.json
+        shell: pwsh
+        working-directory: tool
+        run: (Get-Content config.json -Raw) -replace ',(\s*})','$1' | Set-Content config.json
+      - name: Chạy tool
+        shell: cmd
+        working-directory: tool
+        timeout-minutes: 5
+        run: echo.| tool.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: offsets
+          path: tool/DarkOffsets.h
