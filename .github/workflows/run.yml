@@ -7,9 +7,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Giải nén
+      - name: Giải nén tool
         shell: pwsh
         run: Expand-Archive tool.zip -DestinationPath . -Force
+
+      - name: Giải nén dump.cs
+        shell: pwsh
+        run: Expand-Archive dump.zip -DestinationPath tool/dump -Force
 
       - name: Sửa dấu phẩy thừa trong config.json
         shell: pwsh
