@@ -4,14 +4,11 @@ on:
   push:
     branches: [ main ]
   pull_request:
-  workflow_dispatch:   # cho phép bấm chạy thủ công
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: src
 
     steps:
       - name: Checkout
@@ -45,7 +42,7 @@ jobs:
         with:
           name: assembly-csharp-patch
           path: |
-            src/payload/assembly-csharp-patch.bytes
-            src/payload/assembly-csharp-patch.gz
-            src/payload/fileinfo-line.txt
-            src/payload/build-report.json
+            payload/assembly-csharp-patch.bytes
+            payload/assembly-csharp-patch.gz
+            payload/fileinfo-line.txt
+            payload/build-report.json
