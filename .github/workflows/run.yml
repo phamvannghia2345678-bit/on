@@ -3,7 +3,7 @@ name: Build Assembly Patch
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch: # Cho phép bạn bấm nút chạy thủ công trên web
+  workflow_dispatch:
 
 jobs:
   build:
@@ -21,13 +21,15 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install -r src/requirements.txt # <-- SỬA ĐƯỜNG DẪN Ở ĐÂY
 
     - name: Run Build Script
+      working-directory: ./src # <-- CHẠY SCRIPT TRONG THƯ MỤC SRC
       run: |
         python build_assembly.py
 
     - name: Run Verify Script
+      working-directory: ./src
       run: |
         python verify.py
 
@@ -35,8 +37,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: built-payload
-        path: |
-          payload/assembly-csharp-patch.bytes
-          payload/assembly-csharp-patch.gz
-          payload/fileinfo-line.txt
-          payload/build-report.json
+        path: src/payload/ # <-- LẤY FILE TỪ THƯ MỤC SRC/PAYLOAD
