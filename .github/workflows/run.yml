@@ -1,30 +1,29 @@
 name: Build IFix Patch
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # Cho phép bấm nút chạy thủ công trên web
 
 jobs:
   build-unity-patch:
     runs-on: ubuntu-latest
     steps:
+      # 1. Tải code từ repo về máy chủ ảo
       - name: Checkout code
         uses: actions/checkout@v4
-
-      # --- THÊM BƯỚC NÀY ĐỂ GIẢI NÉN ---
-      - name: Unzip Project
-        run: |
-          unzip mizze.zip -d ./my_unity_project
-          # Nếu bên trong mizze.zip lại có 1 thư mục nữa, bạn cần di chuyển nó ra ngoài
-          # Ví dụ: mv ./my_unity_project/mizze/* ./my_unity_project/
-      # ----------------------------------
-
-      - name: Cache Unity Library
-        uses: actions/cache@v3
         with:
-          path: my_unity_project/Library # Trỏ vào thư mục đã giải nén
-          key: Library-${{ hashFiles('my_unity_project/Assets/**', 'my_unity_project/Packages/**', 'my_unity_project/ProjectSettings/**') }}
+          lfs: true # Hỗ trợ nếu bạn dùng Git LFS cho file lớn
 
-      - name: Build IFix Patch
+      # 2. Cache thư mục Library để build nhanh hơn ở các lần sau
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      # 3. Gọi Unity để build file Patch (Yêu cầu 3 secrets: UNITY_LICENSE, UNITY_EMAIL, UNITY_PASSWORD)
+      - name: Build IFix Patch via Unity
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -32,11 +31,14 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: Android
-          projectPath: my_unity_project  # <-- TRỎ VÀO THƯ MỤC VỪA GIẢI NÉN
           customParameters: -executeMethod IFix.Editor.IFixEditor.GenPatch -batchmode -quit
-        
+          
+      # 4. Tìm và upload file patch .bytes được sinh ra
       - name: Upload Patch Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ifix-patch-file
-          path: "**/*.bytes"
+          # Tìm mọi file .bytes được sinh ra trong quá trình build
+          path: |
+            **/*.bytes
+            **/*.patch
