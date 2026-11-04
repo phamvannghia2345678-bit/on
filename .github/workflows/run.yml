@@ -1,42 +1,36 @@
-name: Update offsets
-on: workflow_dispatch
+name: Build IFix Patch
+
+on:
+  workflow_dispatch: # Cho phép bấm nút chạy thủ công
 
 jobs:
-  run:
-    runs-on: windows-latest
+  build-unity-patch:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          lfs: true # Nếu project có dùng Git LFS
 
-      - name: Giải nén tool
-        shell: pwsh
-        run: Expand-Archive tool.zip -DestinationPath . -Force
+      - name: Cache Unity Library
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
 
-      - name: Giải nén dump.cs
-        shell: pwsh
-        run: Expand-Archive dump.zip -DestinationPath tool/dump -Force
-
-      - name: Sửa dấu phẩy thừa trong config.json
-        shell: pwsh
-        working-directory: tool
-        run: (Get-Content config.json -Raw) -replace ',(\s*})','$1' | Set-Content config.json
-
-      - name: Chạy tool
-        shell: cmd
-        working-directory: tool
-        timeout-minutes: 5
+      - name: Build IFix Patch
+        uses: game-ci/unity-builder@v4
         env:
-          PYTHONUTF8: "1"
-          PYTHONIOENCODING: utf-8
-        run: |
-          chcp 65001
-          echo.| tool.exe > log.txt 2>&1
-          type log.txt
-
-      - name: Upload kết quả
-        if: always()
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: Android # Hoặc iOS tùy game
+          # Custom method để gọi InjectFix Editor
+          customParameters: -executeMethod IFix.Editor.IFixEditor.GenPatch -batchmode -quit
+        
+      - name: Upload Patch Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: offsets
-          path: |
-            tool/DarkOffsets.h
-            tool/log.txt
+          name: ifix-patch-file
+          path: "**/Assembly-CSharp.patch.bytes" # Tìm file patch do InjectFix sinh ra
