@@ -1,44 +1,42 @@
-name: Build IFix Patch
+name: Build Assembly Patch
 
 on:
-  workflow_dispatch: # Cho phép bấm nút chạy thủ công trên web
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # Cho phép bạn bấm nút chạy thủ công trên web
 
 jobs:
-  build-unity-patch:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      # 1. Tải code từ repo về máy chủ ảo
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          lfs: true # Hỗ trợ nếu bạn dùng Git LFS cho file lớn
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      # 2. Cache thư mục Library để build nhanh hơn ở các lần sau
-      - name: Cache Unity Library
-        uses: actions/cache@v4
-        with:
-          path: Library
-          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: |
-            Library-
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
 
-      # 3. Gọi Unity để build file Patch (Yêu cầu 3 secrets: UNITY_LICENSE, UNITY_EMAIL, UNITY_PASSWORD)
-      - name: Build IFix Patch via Unity
-        uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          targetPlatform: Android
-          customParameters: -executeMethod IFix.Editor.IFixEditor.GenPatch -batchmode -quit
-          
-      # 4. Tìm và upload file patch .bytes được sinh ra
-      - name: Upload Patch Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ifix-patch-file
-          # Tìm mọi file .bytes được sinh ra trong quá trình build
-          path: |
-            **/*.bytes
-            **/*.patch
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Build Script
+      run: |
+        python build_assembly.py
+
+    - name: Run Verify Script
+      run: |
+        python verify.py
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: built-payload
+        path: |
+          payload/assembly-csharp-patch.bytes
+          payload/assembly-csharp-patch.gz
+          payload/fileinfo-line.txt
+          payload/build-report.json
