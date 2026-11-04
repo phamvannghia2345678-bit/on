@@ -3,7 +3,7 @@ name: Build Assembly Patch
 on:
   push:
     branches: [ "main", "master" ]
-  workflow_dispatch: # Cho phép bạn bấm nút chạy thủ công trên web
+  workflow_dispatch:
 
 jobs:
   build:
@@ -21,16 +21,14 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        # Cài trực tiếp thư viện, không dùng file requirements để tránh lỗi đường dẫn
         pip install mitmproxy lz4
 
     - name: Run Build Script
-      working-directory: ./src # Chạy script bên trong thư mục src
+      # Đã xóa working-directory
       run: |
         python build_assembly.py
 
     - name: Run Verify Script
-      working-directory: ./src
       run: |
         python verify.py
 
@@ -38,9 +36,8 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: built-payload
-        # Lấy file kết quả từ thư mục src/payload
         path: |
-          src/payload/assembly-csharp-patch.bytes
-          src/payload/assembly-csharp-patch.gz
-          src/payload/fileinfo-line.txt
-          src/payload/build-report.json
+          payload/assembly-csharp-patch.bytes
+          payload/assembly-csharp-patch.gz
+          payload/fileinfo-line.txt
+          payload/build-report.json
