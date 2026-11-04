@@ -14,6 +14,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Unzip source
+        run: |
+          unzip -o src.zip
+          # Nếu zip ra thư mục src/ thì di chuyển hết ra root
+          if [ -d src ]; then
+            mv src/* .
+            rm -rf src
+          fi
+          # Xóa rác
+          rm -rf __MACOSX __pycache__
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
