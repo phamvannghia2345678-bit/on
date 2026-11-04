@@ -1,43 +1,51 @@
-name: Build Assembly Patch
+name: Build & Verify Assembly Patch
 
 on:
   push:
-    branches: [ "main", "master" ]
-  workflow_dispatch:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:   # cho phép bấm chạy thủ công
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install mitmproxy lz4
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
 
-    - name: Run Build Script
-      # Đã xóa working-directory
-      run: |
-        python build_assembly.py
+      - name: Run unit tests
+        run: |
+          python -m unittest discover -s tests -v
 
-    - name: Run Verify Script
-      run: |
-        python verify.py
+      - name: Build assembly
+        run: |
+          python build_assembly.py
 
-    - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: built-payload
-        path: |
-          payload/assembly-csharp-patch.bytes
-          payload/assembly-csharp-patch.gz
-          payload/fileinfo-line.txt
-          payload/build-report.json
+      - name: Verify
+        run: |
+          python verify.py
+
+      - name: Upload payload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: assembly-csharp-patch
+          path: |
+            src/payload/assembly-csharp-patch.bytes
+            src/payload/assembly-csharp-patch.gz
+            src/payload/fileinfo-line.txt
+            src/payload/build-report.json
