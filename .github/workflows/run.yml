@@ -1,7 +1,7 @@
 name: Build IFix Patch
 
 on:
-  workflow_dispatch: # Cho phép bấm nút chạy thủ công
+  workflow_dispatch:
 
 jobs:
   build-unity-patch:
@@ -9,14 +9,20 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          lfs: true # Nếu project có dùng Git LFS
+
+      # --- THÊM BƯỚC NÀY ĐỂ GIẢI NÉN ---
+      - name: Unzip Project
+        run: |
+          unzip mizze.zip -d ./my_unity_project
+          # Nếu bên trong mizze.zip lại có 1 thư mục nữa, bạn cần di chuyển nó ra ngoài
+          # Ví dụ: mv ./my_unity_project/mizze/* ./my_unity_project/
+      # ----------------------------------
 
       - name: Cache Unity Library
         uses: actions/cache@v3
         with:
-          path: Library
-          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          path: my_unity_project/Library # Trỏ vào thư mục đã giải nén
+          key: Library-${{ hashFiles('my_unity_project/Assets/**', 'my_unity_project/Packages/**', 'my_unity_project/ProjectSettings/**') }}
 
       - name: Build IFix Patch
         uses: game-ci/unity-builder@v4
@@ -25,12 +31,12 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
-          targetPlatform: Android # Hoặc iOS tùy game
-          # Custom method để gọi InjectFix Editor
+          targetPlatform: Android
+          projectPath: my_unity_project  # <-- TRỎ VÀO THƯ MỤC VỪA GIẢI NÉN
           customParameters: -executeMethod IFix.Editor.IFixEditor.GenPatch -batchmode -quit
         
       - name: Upload Patch Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ifix-patch-file
-          path: "**/Assembly-CSharp.patch.bytes" # Tìm file patch do InjectFix sinh ra
+          path: "**/*.bytes"
