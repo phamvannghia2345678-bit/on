@@ -7,16 +7,20 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - run: unzip -q IPAStore.zip
       - run: brew install xcodegen && xcodegen generate
+        working-directory: IPAStore
       - run: |
           xcodebuild -project IPAStore.xcodeproj -scheme IPAStore \
             -configuration Release -sdk iphoneos -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+        working-directory: IPAStore
       - run: |
           mkdir Payload
           cp -r build/Build/Products/Release-iphoneos/IPAStore.app Payload/
           zip -r IPAStore.ipa Payload
+        working-directory: IPAStore
       - uses: actions/upload-artifact@v4
         with:
           name: IPAStore
-          path: IPAStore.ipa
+          path: IPAStore/IPAStore.ipa
